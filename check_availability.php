@@ -1,30 +1,44 @@
 <?php
 require_once("includes/config.php");
-// code user email availablity
-if(!empty($_POST["emailid"])) {
-	$email= $_POST["emailid"];
-	if (filter_var($email, FILTER_VALIDATE_EMAIL)===false) {
 
-		echo "error : You did not enter a valid email.";
-	}
-	else {
-		$sql ="SELECT EmailId FROM tblusers WHERE EmailId=:email";
-$query= $dbh -> prepare($sql);
-$query-> bindParam(':email', $email, PDO::PARAM_STR);
-$query-> execute();
-$results = $query -> fetchAll(PDO::FETCH_OBJ);
-$cnt=1;
-if($query -> rowCount() > 0)
-{
-echo "<span style='color:red'> Email already exists .</span>";
- echo "<script>$('#submit').prop('disabled',true);</script>";
-} else{
+// Check if email ID is provided
+if (!empty($_POST["emailid"])) {
+    $email = trim($_POST["emailid"]);
 
-	echo "<span style='color:green'> Email available for Registration .</span>";
- echo "<script>$('#submit').prop('disabled',false);</script>";
+    // Validate email format
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        echo json_encode([
+            "status" => "error",
+            "message" => "You did not enter a valid email."
+        ]);
+        exit;
+    }
+
+    // Use prepared statements to prevent SQL injection
+    try {
+        $sql = "SELECT EmailId FROM tblusers WHERE EmailId = :email";
+        $query = $dbh->prepare($sql);
+        $query->bindParam(':email', $email, PDO::PARAM_STR);
+        $query->execute();
+
+        if ($query->rowCount() > 0) {
+            echo json_encode([
+                "status" => "exists",
+                "message" => "Email already exists.",
+                "disableSubmit" => true
+            ]);
+        } else {
+            echo json_encode([
+                "status" => "available",
+                "message" => "Email available for registration.",
+                "disableSubmit" => false
+            ]);
+        }
+    } catch (PDOException $e) {
+        echo json_encode([
+            "status" => "error",
+            "message" => "Database error: " . $e->getMessage()
+        ]);
+    }
 }
-}
-}
-
-
 ?>
