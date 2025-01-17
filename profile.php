@@ -3,7 +3,7 @@ session_start();
 error_reporting(0);
 include('includes/config.php');
 
-// Redirect if not logged in
+//Redirect if not logged in
 if (strlen($_SESSION['login']) == 0) {
     header('location:index.php');
     exit();
