@@ -9,33 +9,52 @@ if (strlen($_SESSION['login']) == 0) {
     exit();
 }
 
+// CSRF Token Generation
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+// Update Profile Logic
 if (isset($_POST['updateprofile'])) {
-    $name = htmlspecialchars($_POST['fullname'], ENT_QUOTES, 'UTF-8');
-    $mobileno = filter_var($_POST['mobilenumber'], FILTER_SANITIZE_NUMBER_INT);
-    $dob = htmlspecialchars($_POST['dob'], ENT_QUOTES, 'UTF-8');
-    $address = htmlspecialchars($_POST['address'], ENT_QUOTES, 'UTF-8');
-    $city = htmlspecialchars($_POST['city'], ENT_QUOTES, 'UTF-8');
-    $country = htmlspecialchars($_POST['country'], ENT_QUOTES, 'UTF-8');
-    $email = $_SESSION['login'];
+    // Validate CSRF Token
+    if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        $error = "Invalid CSRF token. Please refresh the page and try again.";
+    } else {
+        // Sanitize and validate inputs
+        $name = filter_var($_POST['fullname'], FILTER_SANITIZE_STRING);
+        $mobileno = preg_match('/^\d{10,15}$/', $_POST['mobilenumber']) ? $_POST['mobilenumber'] : null;
+        $dob = filter_var($_POST['dob'], FILTER_SANITIZE_STRING);
+        $address = htmlspecialchars($_POST['address'], ENT_QUOTES, 'UTF-8');
+        $city = htmlspecialchars($_POST['city'], ENT_QUOTES, 'UTF-8');
+        $country = htmlspecialchars($_POST['country'], ENT_QUOTES, 'UTF-8');
+        $email = $_SESSION['login'];
 
-    // Update profile query
-    $sql = "UPDATE tblusers 
-            SET FullName=:name, ContactNo=:mobileno, dob=:dob, Address=:address, City=:city, Country=:country 
-            WHERE EmailId=:email";
-    $query = $dbh->prepare($sql);
-    $query->bindParam(':name', $name, PDO::PARAM_STR);
-    $query->bindParam(':mobileno', $mobileno, PDO::PARAM_STR);
-    $query->bindParam(':dob', $dob, PDO::PARAM_STR);
-    $query->bindParam(':address', $address, PDO::PARAM_STR);
-    $query->bindParam(':city', $city, PDO::PARAM_STR);
-    $query->bindParam(':country', $country, PDO::PARAM_STR);
-    $query->bindParam(':email', $email, PDO::PARAM_STR);
+        // Check required fields
+        if (!$mobileno) {
+            $error = "Invalid phone number. It must contain only numbers and be 10-15 digits long.";
+        } elseif (empty($name) || empty($address) || empty($city) || empty($country)) {
+            $error = "All fields except 'Date of Birth' are required.";
+        } else {
+            try {
+                // Update query
+                $sql = "UPDATE tblusers 
+                        SET FullName=:name, ContactNo=:mobileno, dob=:dob, Address=:address, City=:city, Country=:country 
+                        WHERE EmailId=:email";
+                $query = $dbh->prepare($sql);
+                $query->bindParam(':name', $name, PDO::PARAM_STR);
+                $query->bindParam(':mobileno', $mobileno, PDO::PARAM_STR);
+                $query->bindParam(':dob', $dob, PDO::PARAM_STR);
+                $query->bindParam(':address', $address, PDO::PARAM_STR);
+                $query->bindParam(':city', $city, PDO::PARAM_STR);
+                $query->bindParam(':country', $country, PDO::PARAM_STR);
+                $query->bindParam(':email', $email, PDO::PARAM_STR);
 
-    try {
-        $query->execute();
-        $msg = "Profile Updated Successfully";
-    } catch (PDOException $e) {
-        $error = "Error: " . $e->getMessage();
+                $query->execute();
+                $msg = "Profile Updated Successfully";
+            } catch (PDOException $e) {
+                $error = "Error updating profile: " . $e->getMessage();
+            }
+        }
     }
 }
 
@@ -69,25 +88,12 @@ if (isset($_POST['updateprofile'])) {
 
 <?php include('includes/header.php'); ?>
 
-<!-- Page Header -->
 <section class="page-header profile_page">
     <div class="container">
         <h1>Your Profile</h1>
     </div>
 </section>
 
-<!-- Profile Section -->
-<?php
-$useremail = $_SESSION['login'];
-$sql = "SELECT * FROM tblusers WHERE EmailId=:useremail";
-$query = $dbh->prepare($sql);
-$query->bindParam(':useremail', $useremail, PDO::PARAM_STR);
-$query->execute();
-$results = $query->fetchAll(PDO::FETCH_OBJ);
-
-if ($query->rowCount() > 0) {
-    foreach ($results as $result) {
-?>
 <section class="user_profile inner_pages">
     <div class="container">
         <div class="profile_wrap">
@@ -99,6 +105,18 @@ if ($query->rowCount() > 0) {
             <?php } ?>
 
             <form method="post">
+                <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+                <?php
+                $useremail = $_SESSION['login'];
+                $sql = "SELECT * FROM tblusers WHERE EmailId=:useremail";
+                $query = $dbh->prepare($sql);
+                $query->bindParam(':useremail', $useremail, PDO::PARAM_STR);
+                $query->execute();
+                $results = $query->fetchAll(PDO::FETCH_OBJ);
+
+                if ($query->rowCount() > 0) {
+                    foreach ($results as $result) {
+                ?>
                 <div class="form-group">
                     <label>Registration Date:</label>
                     <p><?php echo htmlentities($result->RegDate); ?></p>
@@ -140,20 +158,15 @@ if ($query->rowCount() > 0) {
                 <div class="form-group">
                     <button type="submit" name="updateprofile" class="btn btn-primary">Save Changes</button>
                 </div>
+                <?php } } ?>
             </form>
         </div>
     </div>
 </section>
-<?php
-    }
-}
-?>
 
 <?php include('includes/footer.php'); ?>
 <script src="assets/js/bootstrap.min.js"></script>
 <script src="assets/js/interface.js"></script>
 </body>
 </html>
-<?php
-}
-?>
+
