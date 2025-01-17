@@ -94,9 +94,7 @@ return true;
 }
 		</style>
 
-
 </head>
-
 <body>
 	<?php include('includes/header.php');?>
 	<div class="ts-main-content">
