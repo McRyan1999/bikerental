@@ -170,7 +170,7 @@ foreach($results as $result)
 <!--Slider-JS-->
 <script src="assets/js/slick.min.js"></script>
 <script src="assets/js/owl.carousel.min.js"></script>
-
+//what do I even write here?
 </body>
 </html>
 <?php } ?>
