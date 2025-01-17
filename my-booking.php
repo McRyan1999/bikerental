@@ -3,13 +3,13 @@ session_start();
 error_reporting(0);
 include('includes/config.php');
 
-// Redirect to login page if session is not active
+// Redirect user to login page if session is not active
 if (strlen($_SESSION['login']) == 0) {
     header('location:index.php');
     exit();
 }
 
-// Function to fetch user data
+// Function to fetch user details
 function fetchUserData($dbh, $useremail) {
     $sql = "SELECT * FROM tblusers WHERE EmailId = :useremail";
     $query = $dbh->prepare($sql);
@@ -18,7 +18,7 @@ function fetchUserData($dbh, $useremail) {
     return $query->fetch(PDO::FETCH_OBJ);
 }
 
-// Function to fetch bookings
+// Function to fetch user bookings
 function fetchUserBookings($dbh, $useremail) {
     $sql = "SELECT 
                 tblvehicles.Vimage1 AS Vimage1, 
@@ -39,7 +39,7 @@ function fetchUserBookings($dbh, $useremail) {
     return $query->fetchAll(PDO::FETCH_OBJ);
 }
 
-// Fetch user details and bookings
+// Get user details and bookings
 $useremail = $_SESSION['login'];
 $userData = fetchUserData($dbh, $useremail);
 $userBookings = fetchUserBookings($dbh, $useremail);
@@ -52,6 +52,8 @@ $userBookings = fetchUserBookings($dbh, $useremail);
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>BikeForYou - My Bookings</title>
+    
+    <!-- Bootstrap & Custom Styles -->
     <link rel="stylesheet" href="assets/css/bootstrap.min.css">
     <link rel="stylesheet" href="assets/css/styles.css">
     <link rel="stylesheet" href="assets/css/font-awesome.min.css">
@@ -62,7 +64,7 @@ $userBookings = fetchUserBookings($dbh, $useremail);
     <?php include('includes/colorswitcher.php'); ?>
     <!-- /Switcher -->
 
-    <!--Header-->
+    <!-- Header -->
     <?php include('includes/header.php'); ?>
     <!-- /Header -->
 
@@ -126,20 +128,34 @@ $userBookings = fetchUserBookings($dbh, $useremail);
                                                 </p>
                                             </div>
                                             <div class="vehicle_status">
-                                                <?php if ($booking->Status == 1): ?>
-                                                    <a href="#" class="btn outline btn-xs active-btn">Confirmed</a>
-                                                <?php elseif ($booking->Status == 2): ?>
-                                                    <a href="#" class="btn outline btn-xs">Cancelled</a>
-                                                <?php else: ?>
-                                                    <a href="#" class="btn outline btn-xs">Not Confirmed</a>
-                                                <?php endif; ?>
+                                                <?php 
+                                                    $statusText = "";
+                                                    $statusClass = "";
+
+                                                    switch ($booking->Status) {
+                                                        case 1:
+                                                            $statusText = "Confirmed";
+                                                            $statusClass = "btn-success";
+                                                            break;
+                                                        case 2:
+                                                            $statusText = "Cancelled";
+                                                            $statusClass = "btn-danger";
+                                                            break;
+                                                        default:
+                                                            $statusText = "Not Confirmed";
+                                                            $statusClass = "btn-warning";
+                                                    }
+                                                ?>
+                                                <a href="#" class="btn outline btn-xs <?php echo $statusClass; ?>">
+                                                    <?php echo $statusText; ?>
+                                                </a>
                                                 <div class="clearfix"></div>
                                             </div>
                                             <p><b>Message:</b> <?php echo htmlentities($booking->message); ?></p>
                                         </li>
                                     <?php endforeach; ?>
                                 <?php else: ?>
-                                    <p>No bookings found.</p>
+                                    <p class="text-center">No bookings found.</p>
                                 <?php endif; ?>
                             </ul>
                         </div>
