@@ -2,36 +2,54 @@
 session_start();
 include('includes/config.php');
 error_reporting(0);
-if(isset($_POST['submit']))
-{
-$fromdate=$_POST['fromdate'];
-$todate=$_POST['todate'];
-$message=$_POST['message'];
-$useremail=$_SESSION['login'];
-$status=0;
-$vhid=$_GET['vhid'];
-$sql="INSERT INTO  tblbooking(userEmail,VehicleId,FromDate,ToDate,message,Status) VALUES(:useremail,:vhid,:fromdate,:todate,:message,:status)";
-$query = $dbh->prepare($sql);
-$query->bindParam(':useremail',$useremail,PDO::PARAM_STR);
-$query->bindParam(':vhid',$vhid,PDO::PARAM_STR);
-$query->bindParam(':fromdate',$fromdate,PDO::PARAM_STR);
-$query->bindParam(':todate',$todate,PDO::PARAM_STR);
-$query->bindParam(':message',$message,PDO::PARAM_STR);
-$query->bindParam(':status',$status,PDO::PARAM_STR);
-$query->execute();
-$lastInsertId = $dbh->lastInsertId();
-if($lastInsertId)
-{
-echo "<script>alert('Booking successfull.');</script>";
-}
-else
-{
-echo "<script>alert('Something went wrong. Please try again');</script>";
-}
 
-}
+if(isset($_POST['submit'])) {
+    // Validate session login
+    if(!isset($_SESSION['login'])) {
+        echo "<script>alert('Please log in to book a vehicle.');</script>";
+        exit;
+    }
 
+    // Sanitize and validate inputs
+    $fromdate = DateTime::createFromFormat('d/m/Y', $_POST['fromdate']);
+    $todate = DateTime::createFromFormat('d/m/Y', $_POST['todate']);
+    $message = htmlspecialchars($_POST['message']);
+    $useremail = htmlspecialchars($_SESSION['login']);
+    $vhid = filter_var($_GET['vhid'], FILTER_VALIDATE_INT);
+
+    if (!$fromdate || !$todate || !$vhid || strlen($message) > 500) {
+        echo "<script>alert('Invalid input. Please check your details and try again.');</script>";
+        exit;
+    }
+
+    $fromdate = $fromdate->format('Y-m-d');
+    $todate = $todate->format('Y-m-d');
+    $status = 0;
+
+    // Database interaction with error handling
+    try {
+        $sql = "INSERT INTO tblbooking(userEmail, VehicleId, FromDate, ToDate, message, Status)
+                VALUES (:useremail, :vhid, :fromdate, :todate, :message, :status)";
+        $query = $dbh->prepare($sql);
+        $query->bindParam(':useremail', $useremail, PDO::PARAM_STR);
+        $query->bindParam(':vhid', $vhid, PDO::PARAM_INT);
+        $query->bindParam(':fromdate', $fromdate, PDO::PARAM_STR);
+        $query->bindParam(':todate', $todate, PDO::PARAM_STR);
+        $query->bindParam(':message', $message, PDO::PARAM_STR);
+        $query->bindParam(':status', $status, PDO::PARAM_INT);
+
+        if ($query->execute()) {
+            echo "<script>alert('Booking successful.');</script>";
+        } else {
+            echo "<script>alert('Something went wrong. Please try again.');</script>";
+        }
+    } catch (Exception $e) {
+        error_log("Error in booking: " . $e->getMessage());
+        echo "<script>alert('An error occurred. Please contact support.');</script>";
+    }
+}
 ?>
+
 
 
 <!DOCTYPE HTML>
