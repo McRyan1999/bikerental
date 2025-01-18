@@ -106,7 +106,7 @@ $msg="Data updated successfully";
     background: #fff;
     border-left: 4px solid #5cb85c;
     -webkit-box-shadow: 0 1px 1px 0 rgba(0,0,0,.1);
-    box-shadow: 0 1px 1px 0 rgba(0,0,0,.1);
+    box-shadow: 0 1px 1px 0 rgba(0,1,0,.1);
 }
 		</style>
 </head>
