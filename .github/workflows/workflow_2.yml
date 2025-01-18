@@ -28,7 +28,7 @@ jobs:
         extensions: mbstring, dom, pdo, mysql
 
     - name: Install PHP Dependencies
-      run: composer install --prefer-dist --no-progress --no-suggest
+      run: composer install
 
     - name: Set up Node.js
       uses: actions/setup-node@v2
