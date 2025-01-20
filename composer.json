@@ -1,9 +1,3 @@
 {
-    "name": "codespace/bikerental",
-    "description": "A Laravel project configured for CI/CD pipeline testing.",
-    "type": "project",
-    "require": {
-        "php": "^8.0",
-        "laravel/framework": "^11.0"
-    }
+    
 }
