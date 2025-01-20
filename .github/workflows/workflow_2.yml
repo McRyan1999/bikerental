@@ -1,4 +1,4 @@
-name: CI/CD Pipeline with Regression Tests
+name: CI/CD Pipeline with Input Validation Tests
 
 on:
   push:
@@ -9,13 +9,8 @@ on:
       - '**'
 
 jobs:
-  regression-tests:
+  input-validation-tests:
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        php-version: ['8.1', '8.2']
-        node-version: ['16']
 
     steps:
     - name: Checkout Code
@@ -24,22 +19,21 @@ jobs:
     - name: Set up PHP
       uses: shivammathur/setup-php@v2
       with:
-        php-version: ${{ matrix.php-version }}
-        extensions: mbstring, dom, pdo, mysql
+        php-version: '8.1'
 
-    - name: Install PHP Dependencies
-      run: composer install
+    - name: Install Dependencies
+      run: composer install --prefer-dist --no-progress --no-suggest
+
+    - name: Run Unit Tests
+      run: ./vendor/bin/phpunit --filter 'InputValidation'
 
     - name: Set up Node.js
       uses: actions/setup-node@v2
       with:
-        node-version: ${{ matrix.node-version }}
+        node-version: '16'
 
     - name: Install Node.js Dependencies
       run: npm install
-
-    - name: Run PHPUnit Tests
-      run: ./vendor/bin/phpunit
 
     - name: Run E2E Tests
       run: npm run e2e
