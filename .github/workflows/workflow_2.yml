@@ -22,7 +22,7 @@ jobs:
         php-version: '8.1'
 
     - name: Install Dependencies
-      run: composer install --prefer-dist --no-suggest
+      run: composer install 
 
     - name: Run Unit Tests
       run: ./vendor/bin/phpunit --filter 'InputValidation'
